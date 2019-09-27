@@ -24,16 +24,17 @@ const Dot = ({x, y, dots}: IDotProps) => {
     backgroundColor: col,
     display: 'inline-block'
   }
-  return (<div style={style}> </div>)
+  return (<div style={style}/>)
 }
 
 interface IMatrixProps {
   width: number
   height: number
   dots: Uint8ClampedArray
+  setDots: React.Dispatch<React.SetStateAction<Uint8ClampedArray>>
 }
 
-const Matrix = ({width, height, dots}: IMatrixProps) => {
+const Matrix = ({width, height, dots, setDots}: IMatrixProps) => {
   let mat: any[] = []
   for (let y = 0; y < height; y++) {
     let row: any[] = []
@@ -45,7 +46,21 @@ const Matrix = ({width, height, dots}: IMatrixProps) => {
     mat.push((<div style={{height: '16px'}}>{row}</div>))
   }
   return (
-      <div style={{width: width * 16 + 'px'}}>
+      <div id={'matrix'} style={{width: width * 16 + 'px'}} onMouseDown={(e) => {
+        let rect = e.currentTarget.getBoundingClientRect();
+        console.log(e.clientX, e.clientY, rect)
+        let dx = Math.floor((e.clientX - rect.left) / 16)
+        let dy = Math.floor((e.clientY - rect.top) / 16)
+        let ix = (dy * width + dx) * 4
+        console.log(dx,dy,ix)
+        if (ix >= 0 && ix < 64 * 4) {
+          let nd = Uint8ClampedArray.from(dots)
+          nd[ix + 0] = 0xff
+          nd[ix + 1] = 0xff
+          nd[ix + 2] = 0xff
+          setDots(nd)
+        }
+      }}>
         {mat}
       </div>
   )
@@ -163,7 +178,7 @@ const App: React.FC = () => {
       {/*<header className="App-header">*/}
       {/*</header>*/}
       <EntireMap dots={dots}/>
-      <Matrix width={width} height={height} dots={dots}/>
+      <Matrix width={width} height={height} dots={dots} setDots={setDots}/>
     </div>
   );
 }
