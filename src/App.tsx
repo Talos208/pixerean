@@ -24,11 +24,13 @@ const Dot = ({x, y, dots}: IDotProps) => {
 interface IMatrixProps {
   width: number
   height: number
+  drawing: boolean
   dots: Uint8ClampedArray
   setDots: React.Dispatch<React.SetStateAction<Uint8ClampedArray>>
+  setDrawing: React.Dispatch<React.SetStateAction<boolean>>
 }
 
-const Matrix = ({width, height, dots, setDots}: IMatrixProps) => {
+const Matrix = ({width, height, dots, setDots, drawing, setDrawing}: IMatrixProps) => {
   let mat: any[] = []
   for (let y = 0; y < height; y++) {
     let row: any[] = []
@@ -39,23 +41,54 @@ const Matrix = ({width, height, dots, setDots}: IMatrixProps) => {
     }
     mat.push((<div style={{height: '16px'}}>{row}</div>))
   }
+
+  const matrixDrawProc = (e: React.MouseEvent<HTMLElement, MouseEvent>) => {
+    let rect = e.currentTarget.getBoundingClientRect();
+    // console.log(e.clientX, e.clientY, rect)
+    let dx = Math.floor((e.clientX - rect.left) / 16)
+    let dy = Math.floor((e.clientY - rect.top) / 16)
+    let ix = (dy * width + dx) * 4
+    // console.log(dx,dy,ix)
+    if (ix >= 0 && ix < width * height * 4) {
+      let nd = Uint8ClampedArray.from(dots)
+      nd[ix + 0] = 0xff
+      nd[ix + 1] = 0xff
+      nd[ix + 2] = 0xff
+      nd[ix + 3] = 0xff
+      setDots(nd)
+    }
+  }
+
   return (
-      <div className={'Matrix'} style={{width: width * 16 + 'px'}} onMouseDown={(e) => {
-        let rect = e.currentTarget.getBoundingClientRect();
-        // console.log(e.clientX, e.clientY, rect)
-        let dx = Math.floor((e.clientX - rect.left) / 16)
-        let dy = Math.floor((e.clientY - rect.top) / 16)
-        let ix = (dy * width + dx) * 4
-        // console.log(dx,dy,ix)
-        if (ix >= 0 && ix < width * height * 4) {
-          let nd = Uint8ClampedArray.from(dots)
-          nd[ix + 0] = 0xff
-          nd[ix + 1] = 0xff
-          nd[ix + 2] = 0xff
-          nd[ix + 3] = 0xff
-          setDots(nd)
-        }
-      }}>
+      <div className={'Matrix'} style={{width: width * 16 + 'px'}}
+           onMouseDown={(event) => {
+             event.stopPropagation()
+             event.preventDefault()
+             matrixDrawProc(event)
+             setDrawing(true)
+           }}
+           onMouseMove={(event) => {
+             if (drawing) {
+               event.stopPropagation()
+               event.preventDefault()
+               matrixDrawProc(event)
+             }
+           }}
+           onMouseLeave={(event) => {
+             if (drawing) {
+               event.stopPropagation()
+               event.preventDefault()
+               setDrawing(false)
+             }
+           }}
+           onMouseUp={(event) => {
+             if (drawing) {
+               event.stopPropagation()
+               event.preventDefault()
+               setDrawing(false)
+             }
+           }}
+      >
         {mat}
       </div>
   )
@@ -102,13 +135,14 @@ const App: React.FC = () => {
   const [width, setWidth] = React.useState(32)
   const [height, setHeight] = React.useState(32)
   const [dots, setDots] = React.useState(new Uint8ClampedArray(width * height * 4))
+  const [drawing, setDrawing] = React.useState(false)
 
   return (
     <div className="App">
       {/*<header className="App-header">*/}
       {/*</header>*/}
       <EntireMap dots={dots} width={width} height={height}/>
-      <Matrix width={width} height={height} dots={dots} setDots={setDots}/>
+      <Matrix width={width} height={height} drawing={drawing} setDrawing={setDrawing} dots={dots} setDots={setDots}/>
     </div>
   );
 }
