@@ -4,7 +4,6 @@ import './App.css';
 interface IDotProps {
   x: number
   y: number
-  // width: number
   dots: Uint8ClampedArray
 }
 
@@ -28,9 +27,10 @@ interface IMatrixProps {
   dots: Uint8ClampedArray
   setDots: React.Dispatch<React.SetStateAction<Uint8ClampedArray>>
   setDrawing: React.Dispatch<React.SetStateAction<boolean>>
+  penColor: TColor
 }
 
-const Matrix = ({width, height, dots, setDots, drawing, setDrawing}: IMatrixProps) => {
+const Matrix = ({width, height, dots, setDots, drawing, setDrawing, penColor}: IMatrixProps) => {
   let mat: any[] = []
   for (let y = 0; y < height; y++) {
     let row: any[] = []
@@ -51,10 +51,10 @@ const Matrix = ({width, height, dots, setDots, drawing, setDrawing}: IMatrixProp
     // console.log(dx,dy,ix)
     if (ix >= 0 && ix < width * height * 4) {
       let nd = Uint8ClampedArray.from(dots)
-      nd[ix + 0] = 0xff
-      nd[ix + 1] = 0xff
-      nd[ix + 2] = 0xff
-      nd[ix + 3] = 0xff
+      nd[ix + 0] = penColor.red
+      nd[ix + 1] = penColor.green
+      nd[ix + 2] = penColor.blue
+      nd[ix + 3] = penColor.alpha
       setDots(nd)
     }
   }
@@ -123,10 +123,119 @@ const EntireMap = ({width, height, dots} :IEnterMapProps) => {
       ctx.clearRect(0,0,width * 4,height * 4)
       ctx.drawImage(tmp,0,0,width,width,0,0,width * 4,width * 4)
     }
-  })
+  },[dots])
   return (
       <div className={'EntireMap'} style={{width: width * 4 + 'px', height:height * 4 + 'px'}}>
         <canvas className={'canvas'} ref={canvasRef} width={width * 4} height={height * 4}/>
+      </div>
+  )
+}
+
+class TColor {
+  red: number;
+  green: number;
+  blue: number;
+  alpha: number;
+  constructor(src?: Partial<TColor>) {
+    this.red = 0
+    this.green = 0
+    this.blue = 0
+    this.alpha = 0
+    Object.assign(this, src)
+  }
+}
+
+interface IColorPicker {
+  color: TColor
+  setColor: React.Dispatch<React.SetStateAction<TColor>>
+}
+
+const ColorPicker = ({color, setColor}: IColorPicker) => {
+  return (
+      <div className={'ColorPicker'}>
+        <div className={'backdrop'} >
+          <div className={'ColorTip'} style={{backgroundColor: '#' +
+                color.red.toString(16).padStart(2, '0') +
+                color.green.toString(16).padStart(2, '0') +
+                color.blue.toString(16).padStart(2, '0'),
+            opacity: color.alpha / 255,
+          }}>
+          </div>
+        </div>
+        <ul className={'ColorValues'}>
+          <li>
+            <label id={'colorRed'}>R
+              <input name={'red'} type={'number'} value={color.red}
+                  onChange={(event) => {
+                    let nc = new TColor(color)
+                    nc.red = event.target.valueAsNumber
+                    setColor(nc)
+                  }}
+              />
+              <input name={'red'} type={'range'} min={0} max={255} value={color.red}
+                     onChange={(event) => {
+                       let nc = new TColor(color)
+                       nc.red = event.target.valueAsNumber
+                       setColor(nc)
+                     }}
+              />
+            </label>
+          </li>
+          <li>
+            <label id={'colorGreen'}>G
+              <input name={'green'} type={'number'} value={color.green}
+                     onChange={(event) => {
+                       let nc = new TColor(color)
+                       nc.green = event.target.valueAsNumber
+                       setColor(nc)
+                     }}
+              />
+              <input name={'green'} type={'range'} min={0} max={255} value={color.green}
+                     onChange={(event) => {
+                       let nc = new TColor(color)
+                       nc.green = event.target.valueAsNumber
+                       setColor(nc)
+                     }}
+              />
+            </label>
+          </li>
+          <li>
+            <label id={'colorBlue'}>B
+              <input name={'blue'} type={'number'} value={color.blue}
+                     onChange={(event) => {
+                       let nc = new TColor(color)
+                       nc.blue = event.target.valueAsNumber
+                       setColor(nc)
+                     }}
+              />
+              <input name={'blue'} type={'range'} min={0} max={255} value={color.blue}
+                     onChange={(event) => {
+                       let nc = new TColor(color)
+                       nc.blue = event.target.valueAsNumber
+                       setColor(nc)
+                     }}
+              />
+            </label>
+          </li>
+          <li>
+            <label id={'colorAlpha'}>A
+              <input name={'alpha'} type={'number'} value={color.alpha}
+                     onChange={(event) => {
+                       let nc = new TColor(color)
+                       nc.alpha = event.target.valueAsNumber
+                       setColor(nc)
+                     }}
+              />
+              <input name={'alpha'} type={'range'} min={0} max={255} value={color.alpha}
+                     onChange={(event) => {
+                       let nc = new TColor(color)
+                       nc.alpha = event.target.valueAsNumber
+                       setColor(nc)
+                     }}
+              />
+            </label>
+          </li>
+        </ul>
       </div>
   )
 }
@@ -136,13 +245,19 @@ const App: React.FC = () => {
   const [height, setHeight] = React.useState(32)
   const [dots, setDots] = React.useState(new Uint8ClampedArray(width * height * 4))
   const [drawing, setDrawing] = React.useState(false)
+  const [penColor, setPenColor] = React.useState({red: 255, green: 255, blue: 255, alpha: 255})
 
   return (
     <div className="App">
       {/*<header className="App-header">*/}
       {/*</header>*/}
-      <EntireMap dots={dots} width={width} height={height}/>
-      <Matrix width={width} height={height} drawing={drawing} setDrawing={setDrawing} dots={dots} setDots={setDots}/>
+      <div>
+        <EntireMap dots={dots} width={width} height={height}/>
+        <ColorPicker color={penColor} setColor={setPenColor}/>
+      </div>
+      <div>
+        <Matrix width={width} height={height} drawing={drawing} setDrawing={setDrawing} dots={dots} setDots={setDots} penColor={penColor}/>
+      </div>
     </div>
   );
 }
