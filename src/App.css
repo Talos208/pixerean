@@ -1,5 +1,10 @@
 .App {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: normal;
+  min-height: 100%;
 }
 
 .App-logo {
@@ -7,16 +12,33 @@
 }
 
 .App-header {
-  background-color: #282c34;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   font-size: calc(10px + 2vmin);
-  color: white;
 }
 
 .App-link {
   color: #09d3ac;
+}
+
+.Dot {
+  width: 16px;
+  height: 16px;
+  border: white solid 1px;
+  margin: -1px;
+  display: inline-block;
+}
+
+.Matrix {
+  background-color: #888;
+  background-image: linear-gradient(45deg, #444 25%, transparent 25%, transparent 75%, #444 75%, #444), linear-gradient(45deg, #444 25%, transparent 25%, transparent 75%, #444 75%, #444);
+  background-position: 0 0, 8px 8px;
+  background-size: 16px 16px;
+}
+
+.EntireMap {
+  margin: 20px;
+  background-color: #888;
+  background-image: linear-gradient(45deg, #444 25%, transparent 25%, transparent 75%, #444 75%, #444), linear-gradient(45deg, #444 25%, transparent 25%, transparent 75%, #444 75%, #444);
+  background-position: 0 0, 8px 8px;
+  background-size: 16px 16px;
 }

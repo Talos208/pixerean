@@ -13,18 +13,12 @@ const Dot = ({x, y, dots}: IDotProps) => {
       dots[0].toString(16).padStart(2, '0') +
       dots[1].toString(16).padStart(2, '0') +
       dots[2].toString(16).padStart(2, '0')
-  
+
   let style = {
-    width: '16px',
-    height: '16px',
-    borderColor: 'white',
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    margin: '-1px',
     backgroundColor: col,
-    display: 'inline-block'
+    opacity: dots[3] / 255,
   }
-  return (<div style={style}/>)
+  return (<div className={'Dot'} style={style}/>)
 }
 
 interface IMatrixProps {
@@ -46,18 +40,19 @@ const Matrix = ({width, height, dots, setDots}: IMatrixProps) => {
     mat.push((<div style={{height: '16px'}}>{row}</div>))
   }
   return (
-      <div id={'matrix'} style={{width: width * 16 + 'px'}} onMouseDown={(e) => {
+      <div className={'Matrix'} style={{width: width * 16 + 'px'}} onMouseDown={(e) => {
         let rect = e.currentTarget.getBoundingClientRect();
-        console.log(e.clientX, e.clientY, rect)
+        // console.log(e.clientX, e.clientY, rect)
         let dx = Math.floor((e.clientX - rect.left) / 16)
         let dy = Math.floor((e.clientY - rect.top) / 16)
         let ix = (dy * width + dx) * 4
-        console.log(dx,dy,ix)
-        if (ix >= 0 && ix < 64 * 4) {
+        // console.log(dx,dy,ix)
+        if (ix >= 0 && ix < width * height * 4) {
           let nd = Uint8ClampedArray.from(dots)
           nd[ix + 0] = 0xff
           nd[ix + 1] = 0xff
           nd[ix + 2] = 0xff
+          nd[ix + 3] = 0xff
           setDots(nd)
         }
       }}>
@@ -67,10 +62,12 @@ const Matrix = ({width, height, dots, setDots}: IMatrixProps) => {
 }
 
 interface IEnterMapProps {
+  width: number
+  height: number
   dots: Uint8ClampedArray
 }
 
-const EntireMap = ({dots} :IEnterMapProps) => {
+const EntireMap = ({width, height, dots} :IEnterMapProps) => {
 
   const canvasRef = useRef(null);
 
@@ -81,103 +78,36 @@ const EntireMap = ({dots} :IEnterMapProps) => {
   };
 
   React.useEffect(() => {
-    let tmp = new OffscreenCanvas(8, 8)
+    let tmp = new OffscreenCanvas(width, height)
     let ctx0 = tmp.getContext('2d')
     if (ctx0 != null) {
-      let data = ctx0.createImageData(8, 8)
-      for (let i = 0;i < 64 * 4;i++) {
-        data.data[i] = dots[i]
-      }
+      let data = ctx0.createImageData(width, height)
+      data.data.set(dots)
       ctx0.putImageData(data, 0, 0)
 
       let ctx = getContext()
       ctx.imageSmoothingEnabled = false
-      ctx.drawImage(tmp,0,0,8,8,0,0,32,32)
+      ctx.clearRect(0,0,width * 4,height * 4)
+      ctx.drawImage(tmp,0,0,width,width,0,0,width * 4,width * 4)
     }
   })
   return (
-      <div style={{height: '64px'}}>
-        <canvas className={'canvas'} ref={canvasRef} width={32} height={32}/>
+      <div className={'EntireMap'} style={{width: width * 4 + 'px', height:height * 4 + 'px'}}>
+        <canvas className={'canvas'} ref={canvasRef} width={width * 4} height={height * 4}/>
       </div>
   )
 }
 
 const App: React.FC = () => {
-  const [width, setWidth] = React.useState(8)
-  const [height, setHeight] = React.useState(8)
-  const [dots, setDots] = React.useState(new Uint8ClampedArray(// width * height * 4))
-      [
-    0x00, 0x00, 0x00, 0xff,
-    0x00, 0x00, 0x80, 0xff,
-    0x00, 0x80, 0x00, 0xff,
-    0x00, 0x80, 0x80, 0xff,
-    0x80, 0x00, 0x00, 0xff,
-    0x80, 0x00, 0x80, 0xff,
-    0x80, 0x80, 0x00, 0xff,
-    0x80, 0x80, 0x80, 0xff,
-    0x40, 0x40, 0x40, 0xff,
-    0x00, 0x00, 0xf0, 0xff,
-    0x00, 0xf0, 0x00, 0xff,
-    0x00, 0xf0, 0xf0, 0xff,
-    0xf0, 0x00, 0x00, 0xff,
-    0xf0, 0x00, 0xf0, 0xff,
-    0xf0, 0xf0, 0x00, 0xff,
-    0xf0, 0xf0, 0xf0, 0xff,
-    0x00, 0x00, 0x00, 0xff,
-    0x00, 0x00, 0x80, 0xff,
-    0x00, 0x80, 0x00, 0xff,
-    0x00, 0x80, 0x80, 0xff,
-    0x80, 0x00, 0x00, 0xff,
-    0x80, 0x00, 0x80, 0xff,
-    0x80, 0x80, 0x00, 0xff,
-    0x80, 0x80, 0x80, 0xff,
-    0x40, 0x40, 0x40, 0xff,
-    0x00, 0x00, 0xf0, 0xff,
-    0x00, 0xf0, 0x00, 0xff,
-    0x00, 0xf0, 0xf0, 0xff,
-    0xf0, 0x00, 0x00, 0xff,
-    0xf0, 0x00, 0xf0, 0xff,
-    0xf0, 0xf0, 0x00, 0xff,
-    0xf0, 0xf0, 0xf0, 0xff,
-    0x00, 0x00, 0x00, 0xff,
-    0x00, 0x00, 0x80, 0xff,
-    0x00, 0x80, 0x00, 0xff,
-    0x00, 0x80, 0x80, 0xff,
-    0x80, 0x00, 0x00, 0xff,
-    0x80, 0x00, 0x80, 0xff,
-    0x80, 0x80, 0x00, 0xff,
-    0x80, 0x80, 0x80, 0xff,
-    0x40, 0x40, 0x40, 0xff,
-    0x00, 0x00, 0xf0, 0xff,
-    0x00, 0xf0, 0x00, 0xff,
-    0x00, 0xf0, 0xf0, 0xff,
-    0xf0, 0x00, 0x00, 0xff,
-    0xf0, 0x00, 0xf0, 0xff,
-    0xf0, 0xf0, 0x00, 0xff,
-    0xf0, 0xf0, 0xf0, 0xff,
-    0x00, 0x00, 0x00, 0xff,
-    0x00, 0x00, 0x80, 0xff,
-    0x00, 0x80, 0x00, 0xff,
-    0x00, 0x80, 0x80, 0xff,
-    0x80, 0x00, 0x00, 0xff,
-    0x80, 0x00, 0x80, 0xff,
-    0x80, 0x80, 0x00, 0xff,
-    0x80, 0x80, 0x80, 0xff,
-    0x40, 0x40, 0x40, 0xff,
-    0x00, 0x00, 0xf0, 0xff,
-    0x00, 0xf0, 0x00, 0xff,
-    0x00, 0xf0, 0xf0, 0xff,
-    0xf0, 0x00, 0x00, 0xff,
-    0xf0, 0x00, 0xf0, 0xff,
-    0xf0, 0xf0, 0x00, 0xff,
-    0xf0, 0xf0, 0xf0, 0xff,
-  ]))
+  const [width, setWidth] = React.useState(32)
+  const [height, setHeight] = React.useState(32)
+  const [dots, setDots] = React.useState(new Uint8ClampedArray(width * height * 4))
 
   return (
     <div className="App">
       {/*<header className="App-header">*/}
       {/*</header>*/}
-      <EntireMap dots={dots}/>
+      <EntireMap dots={dots} width={width} height={height}/>
       <Matrix width={width} height={height} dots={dots} setDots={setDots}/>
     </div>
   );
