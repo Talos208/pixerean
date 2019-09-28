@@ -1,4 +1,4 @@
-import React, {useRef} from 'react';
+import React, {ChangeEvent, useRef} from 'react';
 import './App.css';
 
 interface IDotProps {
@@ -7,11 +7,15 @@ interface IDotProps {
   dots: Uint8ClampedArray
 }
 
+function getColorCode(dots: ArrayLike<number>) {
+  return '#' +
+        dots[0].toString(16).padStart(2, '0') +
+        dots[1].toString(16).padStart(2, '0') +
+        dots[2].toString(16).padStart(2, '0');
+}
+
 const Dot = ({x, y, dots}: IDotProps) => {
-  let col:string = '#'+
-      dots[0].toString(16).padStart(2, '0') +
-      dots[1].toString(16).padStart(2, '0') +
-      dots[2].toString(16).padStart(2, '0')
+  let col:string = getColorCode(dots)
 
   let style = {
     backgroundColor: col,
@@ -145,94 +149,73 @@ class TColor {
   }
 }
 
+const TC2rgb = (src: TColor): Array<number> => {
+    return [src.red, src.green, src.blue]
+}
+
 interface IColorPicker {
   color: TColor
   setColor: React.Dispatch<React.SetStateAction<TColor>>
 }
 
 const ColorPicker = ({color, setColor}: IColorPicker) => {
-  return (
+    const changeRedProc = (event: ChangeEvent) => {
+        let nc = new TColor(color)
+        // @ts-ignore
+        nc.red = event.target.valueAsNumber
+        setColor(nc)
+    };
+    const changeGreenProc = (event: ChangeEvent) => {
+        let nc = new TColor(color)
+        // @ts-ignore
+        nc.green = event.target.valueAsNumber
+        setColor(nc)
+    };
+    const changeBlueProc = (event: ChangeEvent) => {
+        let nc = new TColor(color)
+        // @ts-ignore
+        nc.blue = event.target.valueAsNumber
+        setColor(nc)
+    };
+    const changeAlphaProc = (event: ChangeEvent) => {
+        let nc = new TColor(color)
+        // @ts-ignore
+        nc.alpha = event.target.valueAsNumber
+        setColor(nc)
+    };
+
+    return (
       <div className={'ColorPicker'}>
         <div className={'backdrop'} >
-          <div className={'ColorTip'} style={{backgroundColor: '#' +
-                color.red.toString(16).padStart(2, '0') +
-                color.green.toString(16).padStart(2, '0') +
-                color.blue.toString(16).padStart(2, '0'),
-            opacity: color.alpha / 255,
-          }}>
+            <div className={'ColorTip'} style={{
+                backgroundColor: getColorCode(TC2rgb(color)),
+                opacity: color.alpha / 255,
+            }}>
           </div>
         </div>
         <ul className={'ColorValues'}>
           <li>
             <label id={'colorRed'}>R
-              <input name={'red'} type={'number'} value={color.red}
-                  onChange={(event) => {
-                    let nc = new TColor(color)
-                    nc.red = event.target.valueAsNumber
-                    setColor(nc)
-                  }}
-              />
-              <input name={'red'} type={'range'} min={0} max={255} value={color.red}
-                     onChange={(event) => {
-                       let nc = new TColor(color)
-                       nc.red = event.target.valueAsNumber
-                       setColor(nc)
-                     }}
-              />
+              <input name={'red'} type={'number'} value={color.red} onChange={changeRedProc}/>
+              <input name={'red'} type={'range'} min={0} max={255} value={color.red} onChange={changeRedProc}/>
             </label>
           </li>
           <li>
             <label id={'colorGreen'}>G
-              <input name={'green'} type={'number'} value={color.green}
-                     onChange={(event) => {
-                       let nc = new TColor(color)
-                       nc.green = event.target.valueAsNumber
-                       setColor(nc)
-                     }}
-              />
-              <input name={'green'} type={'range'} min={0} max={255} value={color.green}
-                     onChange={(event) => {
-                       let nc = new TColor(color)
-                       nc.green = event.target.valueAsNumber
-                       setColor(nc)
-                     }}
-              />
+              <input name={'green'} type={'number'} value={color.green} onChange={changeGreenProc}/>
+              <input name={'green'} type={'range'} min={0} max={255} value={color.green} onChange={changeGreenProc}/>
             </label>
           </li>
           <li>
             <label id={'colorBlue'}>B
-              <input name={'blue'} type={'number'} value={color.blue}
-                     onChange={(event) => {
-                       let nc = new TColor(color)
-                       nc.blue = event.target.valueAsNumber
-                       setColor(nc)
-                     }}
-              />
-              <input name={'blue'} type={'range'} min={0} max={255} value={color.blue}
-                     onChange={(event) => {
-                       let nc = new TColor(color)
-                       nc.blue = event.target.valueAsNumber
-                       setColor(nc)
-                     }}
-              />
+              <input name={'blue'} type={'number'} value={color.blue} onChange={changeBlueProc}/>
+              <input name={'blue'} type={'range'} min={0} max={255} value={color.blue} onChange={changeBlueProc}/>
             </label>
           </li>
           <li>
             <label id={'colorAlpha'}>A
-              <input name={'alpha'} type={'number'} value={color.alpha}
-                     onChange={(event) => {
-                       let nc = new TColor(color)
-                       nc.alpha = event.target.valueAsNumber
-                       setColor(nc)
-                     }}
-              />
-              <input name={'alpha'} type={'range'} min={0} max={255} value={color.alpha}
-                     onChange={(event) => {
-                       let nc = new TColor(color)
-                       nc.alpha = event.target.valueAsNumber
-                       setColor(nc)
-                     }}
-              />
+              <input name={'alpha'} type={'number'} value={color.alpha} onChange={changeAlphaProc}/>
+              <input name={'alpha'} type={'range'} min={0} max={255} value={color.alpha} onChange={changeAlphaProc}/>
             </label>
           </li>
         </ul>
