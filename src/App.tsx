@@ -131,6 +131,20 @@ const Matrix = ({width, height, dots, setDots, drawing, setDrawing, penColor, se
              matrixDrawProc(rect, touch.clientX, touch.clientY)
            }
          }}
+         onTouchEnd={(event) => {
+             if (drawing) {
+                 event.stopPropagation()
+                 event.preventDefault()
+                 setDrawing(false)
+             }
+         }}
+         onTouchCancel={(event) => {
+             if (drawing) {
+                 event.stopPropagation()
+                 event.preventDefault()
+                 setDrawing(false)
+             }
+         }}
     >
       {mat}
     </div>
@@ -144,7 +158,7 @@ interface IEnterMapProps {
 }
 
 const EntireMap = ({width, height, dots}: IEnterMapProps) => {
-
+  const zoom = 3;
   const canvasRef = useRef(null);
 
   const getContext = (): CanvasRenderingContext2D => {
@@ -163,8 +177,9 @@ const EntireMap = ({width, height, dots}: IEnterMapProps) => {
 
       let ctx = getContext()
       ctx.imageSmoothingEnabled = false
-      ctx.clearRect(0, 0, width * 4, height * 4)
-      ctx.drawImage(tmp, 0, 0, width, width, 0, 0, width * 4, width * 4)
+
+      ctx.clearRect(0, 0, width * zoom, height * zoom)
+      ctx.drawImage(tmp, 0, 0, width, width, 0, 0, width * zoom, width * zoom)
     }
   }, [dots])
   return (
