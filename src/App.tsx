@@ -32,9 +32,10 @@ interface IMatrixProps {
   setDots: React.Dispatch<React.SetStateAction<Uint8ClampedArray>>
   setDrawing: React.Dispatch<React.SetStateAction<boolean>>
   penColor: TColor
+  setPenColor: React.Dispatch<React.SetStateAction<TColor>>
 }
 
-const Matrix = ({width, height, dots, setDots, drawing, setDrawing, penColor}: IMatrixProps) => {
+const Matrix = ({width, height, dots, setDots, drawing, setDrawing, penColor, setPenColor}: IMatrixProps) => {
   const elemRef = useRef(null);
 
   const getElem = (): Element => {
@@ -43,52 +44,56 @@ const Matrix = ({width, height, dots, setDots, drawing, setDrawing, penColor}: I
     return elem;
   };
 
+  function dotsIndex(rect: DOMRect | ClientRect, x: number, y: number) {
+    let dx = Math.floor((x - rect.left) / 16)
+    let dy = Math.floor((y - rect.top) / 16)
+    return (dy * width + dx) * 4;
+  }
+
+  const matrixDrawProc = (rect: DOMRect | ClientRect, x: number, y: number) => {
+    let ix = dotsIndex(rect, x, y);
+    // console.log(dx,dy,ix)
+    if (ix >= 0 && ix < width * height * 4) {
+      let nd = Uint8ClampedArray.from(dots)
+      nd.set(toRgba(penColor), ix)
+      setDots(nd)
+    }
+  }
+
   let mat: any[] = []
   for (let y = 0; y < height; y++) {
     let row: any[] = []
     for (let x = 0; x < width; x++) {
       let ix = (y * width + x) * 4;
       // @ts-ignore
-      row.push((<Dot x={x} y={y} dots={dots.slice(ix)}> </Dot>))
+      row.push((<Dot x={x} y={y} dots={dots.slice(ix)}/>))
     }
     mat.push((<div style={{height: '16px'}}>{row}</div>))
   }
 
-  const matrixDrawProc = (rect: DOMRect | ClientRect, x: number, y: number) => {
-    let dx = Math.floor((x - rect.left) / 16)
-    let dy = Math.floor((y - rect.top) / 16)
-    let ix = (dy * width + dx) * 4
-    // console.log(dx,dy,ix)
-    if (ix >= 0 && ix < width * height * 4) {
-      let nd = Uint8ClampedArray.from(dots)
-      nd[ix + 0] = penColor.red
-      nd[ix + 1] = penColor.green
-      nd[ix + 2] = penColor.blue
-      nd[ix + 3] = penColor.alpha
-      setDots(nd)
-    }
-  }
-
-  const matrixDrawProc2 = (e: React.MouseEvent<HTMLElement, MouseEvent>) => {
-    let rect = e.currentTarget.getBoundingClientRect();
-    // console.log(e.clientX, e.clientY, rect)
-
-    matrixDrawProc(rect, e.clientX, e.clientY)
-  }
-
   return (
     <div className={'Matrix'} ref={elemRef} style={{width: width * 16 + 'px'}}
+         onContextMenu={(event) => {
+           event.stopPropagation()
+           event.preventDefault()
+           return false
+         }}
          onMouseDown={(event) => {
            event.stopPropagation()
            event.preventDefault()
-           matrixDrawProc2(event)
+           if (event.button === 2) {
+             let ix = dotsIndex(event.currentTarget.getBoundingClientRect(), event.clientX, event.clientY)
+             setPenColor(fromRbg(dots.subarray(ix)))
+             return
+           }
+           matrixDrawProc(event.currentTarget.getBoundingClientRect(), event.clientX, event.clientY)
            setDrawing(true)
          }}
          onMouseMove={(event) => {
            if (drawing) {
              event.stopPropagation()
              event.preventDefault()
-             matrixDrawProc2(event)
+             matrixDrawProc(event.currentTarget.getBoundingClientRect(), event.clientX, event.clientY)
            }
          }}
          onMouseLeave={(event) => {
@@ -184,8 +189,20 @@ class TColor {
   }
 }
 
-const TC2rgb = (src: TColor): Array<number> => {
+const toRgb = (src: TColor): Array<number> => {
   return [src.red, src.green, src.blue]
+}
+
+const toRgba = (src: TColor): Array<number> => {
+  return [src.red, src.green, src.blue, src.alpha]
+}
+
+const fromRbg = (src: ArrayLike<number>): TColor => {
+  if (src.length == 3) {
+    return new TColor({red: src[0], green: src[1], blue: src[2], alpha: 255})
+  } else {
+    return new TColor({red: src[0], green: src[1], blue: src[2], alpha: src[3]})
+  }
 }
 
 interface IColorPicker {
@@ -223,7 +240,7 @@ const ColorPicker = ({color, setColor}: IColorPicker) => {
     <div className={'ColorPicker'}>
       <div className={'backdrop'}>
         <div className={'ColorTip'} style={{
-          backgroundColor: getColorCode(TC2rgb(color)),
+          backgroundColor: getColorCode(toRgb(color)),
           opacity: color.alpha / 255,
         }}>
         </div>
@@ -275,7 +292,7 @@ const App: React.FC = () => {
       </div>
       <div>
         <Matrix width={width} height={height} drawing={drawing} setDrawing={setDrawing} dots={dots} setDots={setDots}
-                penColor={penColor}/>
+                penColor={penColor} setPenColor={setPenColor}/>
       </div>
     </div>
   );
