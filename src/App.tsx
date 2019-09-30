@@ -31,11 +31,12 @@ interface IMatrixProps {
   dots: Uint8ClampedArray
   setDots: React.Dispatch<React.SetStateAction<Uint8ClampedArray>>
   setDrawing: React.Dispatch<React.SetStateAction<boolean>>
-  penColor: TColor
-  setPenColor: React.Dispatch<React.SetStateAction<TColor>>
+  palette: TColor[]
+  setPalette: React.Dispatch<React.SetStateAction<TColor[]>>
+  penColorIndex: number
 }
 
-const Matrix = ({width, height, dots, setDots, drawing, setDrawing, penColor, setPenColor}: IMatrixProps) => {
+const Matrix = ({width, height, dots, setDots, drawing, setDrawing, palette, setPalette, penColorIndex}: IMatrixProps) => {
   const elemRef = useRef(null);
 
   const getElem = (): Element => {
@@ -52,10 +53,9 @@ const Matrix = ({width, height, dots, setDots, drawing, setDrawing, penColor, se
 
   const matrixDrawProc = (rect: DOMRect | ClientRect, x: number, y: number) => {
     let ix = dotsIndex(rect, x, y);
-    // console.log(dx,dy,ix)
     if (ix >= 0 && ix < width * height * 4) {
       let nd = Uint8ClampedArray.from(dots)
-      nd.set(toRgba(penColor), ix)
+      nd.set(toRgba(palette[penColorIndex]), ix)
       setDots(nd)
     }
   }
@@ -83,7 +83,9 @@ const Matrix = ({width, height, dots, setDots, drawing, setDrawing, penColor, se
            event.preventDefault()
            if (event.button === 2) {
              let ix = dotsIndex(event.currentTarget.getBoundingClientRect(), event.clientX, event.clientY)
-             setPenColor(fromRbg(dots.subarray(ix)))
+             let np = Array.from<TColor>(palette)
+             np[penColorIndex] = fromRbg(dots.subarray(ix))
+             setPalette(np)
              return
            }
            matrixDrawProc(event.currentTarget.getBoundingClientRect(), event.clientX, event.clientY)
@@ -221,36 +223,38 @@ const fromRbg = (src: ArrayLike<number>): TColor => {
 }
 
 interface IColorPicker {
-  color: TColor
-  setColor: React.Dispatch<React.SetStateAction<TColor>>
+  palette: TColor[]
+  setPallet:  React.Dispatch<React.SetStateAction<TColor[]>>
+  penColorIndex: number
 }
 
-const ColorPicker = ({color, setColor}: IColorPicker) => {
+const ColorPicker = ({palette, setPallet, penColorIndex}: IColorPicker) => {
   const changeRedProc = (event: ChangeEvent) => {
-    let nc = new TColor(color)
+    let np = Array.from<TColor>(palette)
     // @ts-ignore
-    nc.red = event.target.valueAsNumber
-    setColor(nc)
+    np[penColorIndex].red = event.target.valueAsNumber
+    setPallet(np)
   };
   const changeGreenProc = (event: ChangeEvent) => {
-    let nc = new TColor(color)
+    let np = Array.from<TColor>(palette)
     // @ts-ignore
-    nc.green = event.target.valueAsNumber
-    setColor(nc)
+    np[penColorIndex].green = event.target.valueAsNumber
+    setPallet(np)
   };
   const changeBlueProc = (event: ChangeEvent) => {
-    let nc = new TColor(color)
+    let np = Array.from<TColor>(palette)
     // @ts-ignore
-    nc.blue = event.target.valueAsNumber
-    setColor(nc)
+    np[penColorIndex].blue = event.target.valueAsNumber
+    setPallet(np)
   };
   const changeAlphaProc = (event: ChangeEvent) => {
-    let nc = new TColor(color)
+    let np = Array.from<TColor>(palette)
     // @ts-ignore
-    nc.alpha = event.target.valueAsNumber
-    setColor(nc)
+    np[penColorIndex].alpha = event.target.valueAsNumber
+    setPallet(np)
   };
 
+  let color = palette[penColorIndex]
   return (
     <div className={'ColorPicker'}>
       <div className={'backdrop'}>
@@ -262,29 +266,70 @@ const ColorPicker = ({color, setColor}: IColorPicker) => {
       </div>
       <ul className={'ColorValues'}>
         <li>
-          <label id={'colorRed'}>R
+          <label id={'colorRed'}><span>R</span>
             <input name={'red'} type={'number'} value={color.red} onChange={changeRedProc}/>
             <input name={'red'} type={'range'} min={0} max={255} value={color.red} onChange={changeRedProc}/>
           </label>
         </li>
         <li>
-          <label id={'colorGreen'}>G
+          <label id={'colorGreen'}><span>G</span>
             <input name={'green'} type={'number'} value={color.green} onChange={changeGreenProc}/>
             <input name={'green'} type={'range'} min={0} max={255} value={color.green} onChange={changeGreenProc}/>
           </label>
         </li>
         <li>
-          <label id={'colorBlue'}>B
+          <label id={'colorBlue'}><span>B</span>
             <input name={'blue'} type={'number'} value={color.blue} onChange={changeBlueProc}/>
             <input name={'blue'} type={'range'} min={0} max={255} value={color.blue} onChange={changeBlueProc}/>
           </label>
         </li>
         <li>
-          <label id={'colorAlpha'}>A
+          <label id={'colorAlpha'}><span>A</span>
             <input name={'alpha'} type={'number'} value={color.alpha} onChange={changeAlphaProc}/>
             <input name={'alpha'} type={'range'} min={0} max={255} value={color.alpha} onChange={changeAlphaProc}/>
           </label>
         </li>
+      </ul>
+    </div>
+  )
+}
+
+interface IColorPalette {
+  palettes: TColor[]
+  setPalette: React.Dispatch<React.SetStateAction<TColor[]>>
+  penColorIndex: number
+  setPenColorIndex: React.Dispatch<React.SetStateAction<number>>
+}
+
+const ColorPalette = ({palettes, setPalette, penColorIndex, setPenColorIndex}: IColorPalette) =>{
+  let p = palettes.map((v, ix) => {
+    let style: object = {}
+    if (ix == penColorIndex) {
+      style = {borderColor: 'lightgray', borderWidth: '2px', margin: '0px'}
+    }
+    return (<li className={'Palette'} data-palette-index={ix} onClick={(event) => {
+      let dataset = event.currentTarget.dataset;
+      let ix: number = parseInt(dataset['paletteIndex'] || '0')
+      setPenColorIndex(ix)
+    }} style={style}>
+      <div style={{backgroundColor: getColorCode(toRgba(v)), opacity: v.alpha / 255 }}/>
+    </li>)
+  })
+
+  return (
+    <div className={'ColorPalette'}>
+      <ul style={{display: 'flex', flexFlow: 'raw wrap'}}>
+        {p}
+        <li className={'AddPalette'} onClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          let np = Array.from<TColor>(palettes);
+          let sc = palettes[penColorIndex];
+          np.push({red: sc.red, green: sc.green, blue: sc.blue, alpha: sc.alpha}) // deep copy
+          setPalette(np)
+          setPenColorIndex(penColorIndex + 1)
+        }}
+        ><div>+</div></li>
       </ul>
     </div>
   )
@@ -295,7 +340,11 @@ const App: React.FC = () => {
   const [height, setHeight] = React.useState(32)
   const [dots, setDots] = React.useState(new Uint8ClampedArray(width * height * 4))
   const [drawing, setDrawing] = React.useState(false)
-  const [penColor, setPenColor] = React.useState({red: 255, green: 255, blue: 255, alpha: 255})
+  const [penColorIndex, setPenColorIndex] = React.useState(1)
+  let p: TColor[] = [
+    {red: 0, green: 0, blue: 0, alpha: 0},
+    {red: 255, green: 255, blue: 255, alpha: 255}]
+  const [palettes, setPallets] = React.useState(p)
 
   return (
     <div className="App">
@@ -303,11 +352,15 @@ const App: React.FC = () => {
       {/*</header>*/}
       <div>
         <EntireMap dots={dots} width={width} height={height}/>
-        <ColorPicker color={penColor} setColor={setPenColor}/>
       </div>
       <div>
+        <div style={{display: 'flex', flexFlow: 'row'}}>
+        <ColorPicker palette={palettes} setPallet={setPallets} penColorIndex={penColorIndex}/>
+        <ColorPalette palettes={palettes} penColorIndex={penColorIndex} setPenColorIndex={setPenColorIndex} setPalette={setPallets}/>
+        </div>
         <Matrix width={width} height={height} drawing={drawing} setDrawing={setDrawing} dots={dots} setDots={setDots}
-                penColor={penColor} setPenColor={setPenColor}/>
+                palette={palettes} setPalette={setPallets} penColorIndex={penColorIndex}
+        />
       </div>
     </div>
   );
