@@ -60,19 +60,34 @@ const Matrix = ({width, height, dots, setDots, drawing, setDrawing, penColor, se
     }
   }
 
-  let mat: any[] = []
-  for (let y = 0; y < height; y++) {
-    let row: any[] = []
-    for (let x = 0; x < width; x++) {
-      let ix = (y * width + x) * 4;
-      // @ts-ignore
-      row.push((<Dot x={x} y={y} dots={dots.slice(ix)}/>))
+  const canvasRef = useRef(null);
+
+  const getContext = (): CanvasRenderingContext2D => {
+    const canvas: any = canvasRef.current;
+
+    return canvas.getContext('2d');
+  };
+
+  const zoom = 16
+
+  React.useEffect(() => {
+    let tmp = new OffscreenCanvas(width, height)
+    let ctx0 = tmp.getContext('2d')
+    if (ctx0 != null) {
+      let data = ctx0.createImageData(width, height)
+      data.data.set(dots)
+      ctx0.putImageData(data, 0, 0)
+
+      let ctx = getContext()
+      ctx.imageSmoothingEnabled = false
+
+      ctx.clearRect(0, 0, width * zoom, height * zoom)
+      ctx.drawImage(tmp, 0, 0, width, width, 0, 0, width * zoom, width * zoom)
     }
-    mat.push((<div style={{height: '16px'}}>{row}</div>))
-  }
+  }, [dots])
 
   return (
-    <div className={'Matrix'} ref={elemRef} style={{width: width * 16 + 'px'}}
+    <div className={'Matrix'} ref={elemRef} style={{width: width * zoom + 'px'}}
          onContextMenu={(event) => {
            event.stopPropagation()
            event.preventDefault()
@@ -146,7 +161,9 @@ const Matrix = ({width, height, dots, setDots, drawing, setDrawing, penColor, se
              }
          }}
     >
-      {mat}
+      {/*{mat}*/}
+      <canvas ref={canvasRef} width={width * zoom} height={width * zoom}>
+      </canvas>
     </div>
   )
 }
@@ -183,8 +200,8 @@ const EntireMap = ({width, height, dots}: IEnterMapProps) => {
     }
   }, [dots])
   return (
-    <div className={'EntireMap'} style={{width: width * 4 + 'px', height: height * 4 + 'px'}}>
-      <canvas className={'canvas'} ref={canvasRef} width={width * 4} height={height * 4}/>
+    <div className={'EntireMap'} style={{width: width * zoom + 'px', height: height * zoom + 'px'}}>
+      <canvas className={'canvas'} ref={canvasRef} width={width * zoom} height={height * zoom}/>
     </div>
   )
 }
