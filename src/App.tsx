@@ -1,28 +1,10 @@
 import React, {ChangeEvent, useRef} from 'react';
 import './App.css';
 
-interface IDotProps {
-  x: number
-  y: number
-  dots: Uint8ClampedArray
-}
-
-function getColorCode(dots: ArrayLike<number>) {
-  return '#' +
-    dots[0].toString(16).padStart(2, '0') +
-    dots[1].toString(16).padStart(2, '0') +
-    dots[2].toString(16).padStart(2, '0');
-}
-
-const Dot = ({x, y, dots}: IDotProps) => {
-  let col: string = getColorCode(dots)
-
-  let style = {
-    backgroundColor: col,
-    opacity: dots[3] / 255,
-  }
-  return (<div className={'Dot'} style={style}/>)
-}
+const getColorCode = (dots: ArrayLike<number>) => '#' +
+  dots[0].toString(16).padStart(2, '0') +
+  dots[1].toString(16).padStart(2, '0') +
+  dots[2].toString(16).padStart(2, '0');
 
 interface IMatrixProps {
   width: number
@@ -34,6 +16,7 @@ interface IMatrixProps {
   palette: TColor[]
   setPalette: React.Dispatch<React.SetStateAction<TColor[]>>
   penColorIndex: number
+  setPenColorIndex: React.Dispatch<React.SetStateAction<number>>
 }
 
 const Matrix = ({width, height, dots, setDots, drawing, setDrawing, palette, setPalette, penColorIndex}: IMatrixProps) => {
@@ -99,8 +82,9 @@ const Matrix = ({width, height, dots, setDots, drawing, setDrawing, palette, set
            if (event.button === 2) {
              let ix = dotsIndex(event.currentTarget.getBoundingClientRect(), event.clientX, event.clientY)
              let np = Array.from<TColor>(palette)
-             np[penColorIndex] = fromRbg(dots.subarray(ix))
+             np[-1] = fromRbg(cells[cellIndex].subarray(ix))
              setPalette(np)
+             setPenColorIndex(-1)
              return
            }
            matrixDrawProc(event.currentTarget.getBoundingClientRect(), event.clientX, event.clientY)
@@ -342,9 +326,16 @@ const ColorPalette = ({palettes, setPalette, penColorIndex, setPenColorIndex}: I
           event.stopPropagation()
           let np = Array.from<TColor>(palettes);
           let sc = palettes[penColorIndex];
-          np.push({red: sc.red, green: sc.green, blue: sc.blue, alpha: sc.alpha}) // deep copy
+          if (penColorIndex < 0) {
+            np.push({red: sc.red, green: sc.green, blue: sc.blue, alpha: sc.alpha}) // deep copy
+            setPenColorIndex(palettes.length)
+          } else {
+            np.push({red: 0, green: 0, blue: 0, alpha: 0}) // deep copy
+            np.copyWithin(penColorIndex + 1, penColorIndex)
+            np[penColorIndex] = {red: sc.red, green: sc.green, blue: sc.blue, alpha: sc.alpha}
+            setPenColorIndex(penColorIndex + 1)
+          }
           setPalette(np)
-          setPenColorIndex(penColorIndex + 1)
         }}
         ><div>+</div></li>
       </ul>

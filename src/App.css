@@ -96,7 +96,8 @@
     margin: 4px 0px;
     width: 198px;
     height: 90px;
-    overflow-y: scroll;
+    overflow-x: hidden;
+    overflow-y: paged-y;
 }
 
 .ColorPalette ul {
