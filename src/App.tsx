@@ -6,10 +6,28 @@ const getColorCode = (dots: ArrayLike<number>) => '#' +
   dots[1].toString(16).padStart(2, '0') +
   dots[2].toString(16).padStart(2, '0');
 
+const renderToCanvas = (width: number, height: number, dots: Uint8ClampedArray, getContextProc: () => CanvasRenderingContext2D, zoom: number) => {
+  let tmp = new OffscreenCanvas(width, height)
+  let ctx0 = tmp.getContext('2d')
+  if (ctx0 != null) {
+    let data = ctx0.createImageData(width, height)
+    data.data.set(dots)
+    ctx0.putImageData(data, 0, 0)
+
+    let ctx = getContextProc()
+    ctx.imageSmoothingEnabled = false
+
+    ctx.clearRect(0, 0, width * zoom, height * zoom)
+    ctx.drawImage(tmp, 0, 0, width, width, 0, 0, width * zoom, width * zoom)
+  }
+};
+
 interface IMatrixProps {
   width: number
   height: number
   drawing: boolean
+  cells: Uint8ClampedArray[]
+  cellIndex: number
   dots: Uint8ClampedArray
   setDots: React.Dispatch<React.SetStateAction<Uint8ClampedArray>>
   setDrawing: React.Dispatch<React.SetStateAction<boolean>>
@@ -19,7 +37,9 @@ interface IMatrixProps {
   setPenColorIndex: React.Dispatch<React.SetStateAction<number>>
 }
 
-const Matrix = ({width, height, dots, setDots, drawing, setDrawing, palette, setPalette, penColorIndex}: IMatrixProps) => {
+const Matrix = ({width, height,
+                  cells, cellIndex, setDots,dots,
+                  drawing, setDrawing, palette, setPalette, penColorIndex, setPenColorIndex}: IMatrixProps) => {
   const elemRef = useRef(null);
 
   const getElem = (): Element => {
@@ -37,8 +57,10 @@ const Matrix = ({width, height, dots, setDots, drawing, setDrawing, palette, set
   const matrixDrawProc = (rect: DOMRect | ClientRect, x: number, y: number) => {
     let ix = dotsIndex(rect, x, y);
     if (ix >= 0 && ix < width * height * 4) {
-      let nd = Uint8ClampedArray.from(dots)
+      let d = dots
+      let nd = Uint8ClampedArray.from(d)
       nd.set(toRgba(palette[penColorIndex]), ix)
+      cells[cellIndex] = nd
       setDots(nd)
     }
   }
@@ -54,20 +76,8 @@ const Matrix = ({width, height, dots, setDots, drawing, setDrawing, palette, set
   const zoom = 16
 
   React.useEffect(() => {
-    let tmp = new OffscreenCanvas(width, height)
-    let ctx0 = tmp.getContext('2d')
-    if (ctx0 != null) {
-      let data = ctx0.createImageData(width, height)
-      data.data.set(dots)
-      ctx0.putImageData(data, 0, 0)
-
-      let ctx = getContext()
-      ctx.imageSmoothingEnabled = false
-
-      ctx.clearRect(0, 0, width * zoom, height * zoom)
-      ctx.drawImage(tmp, 0, 0, width, width, 0, 0, width * zoom, width * zoom)
-    }
-  }, [dots])
+    renderToCanvas(width, height, dots/*cells[cellIndex]*/, getContext, zoom)
+  }, [dots, cellIndex])
 
   return (
     <div className={'Matrix'} ref={elemRef} style={{width: width * zoom + 'px'}}
@@ -82,7 +92,7 @@ const Matrix = ({width, height, dots, setDots, drawing, setDrawing, palette, set
            if (event.button === 2) {
              let ix = dotsIndex(event.currentTarget.getBoundingClientRect(), event.clientX, event.clientY)
              let np = Array.from<TColor>(palette)
-             np[-1] = fromRbg(cells[cellIndex].subarray(ix))
+             np[-1] = fromRbg(dots.subarray(ix))
              setPalette(np)
              setPenColorIndex(-1)
              return
@@ -171,23 +181,44 @@ const EntireMap = ({width, height, dots}: IEnterMapProps) => {
   };
 
   React.useEffect(() => {
-    let tmp = new OffscreenCanvas(width, height)
-    let ctx0 = tmp.getContext('2d')
-    if (ctx0 != null) {
-      let data = ctx0.createImageData(width, height)
-      data.data.set(dots)
-      ctx0.putImageData(data, 0, 0)
-
-      let ctx = getContext()
-      ctx.imageSmoothingEnabled = false
-
-      ctx.clearRect(0, 0, width * zoom, height * zoom)
-      ctx.drawImage(tmp, 0, 0, width, width, 0, 0, width * zoom, width * zoom)
-    }
+    renderToCanvas(width, height, dots, getContext, zoom);
   }, [dots])
   return (
     <div className={'EntireMap'} style={{width: width * zoom + 'px', height: height * zoom + 'px'}}>
       <canvas className={'canvas'} ref={canvasRef} width={width * zoom} height={height * zoom}/>
+    </div>
+  )
+}
+
+interface ICellProps {
+  dots: Uint8ClampedArray
+  setDots: React.Dispatch<React.SetStateAction<Uint8ClampedArray>>
+  index: number
+  setIndex: React.Dispatch<React.SetStateAction<number>>
+}
+
+const Cell = ({dots,setDots, index, setIndex}: ICellProps) => {
+  const canvasRef = useRef(null)
+  const width = 32
+  const height = 32
+  const zoom = 2
+
+  const getContext = (): CanvasRenderingContext2D => {
+    const canvas: any = canvasRef.current;
+
+    return canvas.getContext('2d');
+  }
+
+  React.useEffect(() => {
+    renderToCanvas(width, height,dots, getContext, zoom)
+  }, [dots])
+
+  return (
+    <div className={'Cell'} onClick={() => {
+      setIndex(index)
+      setDots(dots)
+    }}>
+      <canvas ref={canvasRef} width={width * zoom + 'px'} height={height * zoom + 'px'}/>
     </div>
   )
 }
@@ -346,7 +377,11 @@ const ColorPalette = ({palettes, setPalette, penColorIndex, setPenColorIndex}: I
 const App: React.FC = () => {
   const [width, setWidth] = React.useState(32)
   const [height, setHeight] = React.useState(32)
-  const [dots, setDots] = React.useState(new Uint8ClampedArray(width * height * 4))
+  const [cells, setCells] = React.useState([
+    new Uint8ClampedArray(width * height * 4),
+  ])
+  const [cellIndex, setCellIndex] = React.useState(0)
+  const [dots, setDots] = React.useState(cells[cellIndex])
   const [drawing, setDrawing] = React.useState(false)
   const [penColorIndex, setPenColorIndex] = React.useState(1)
   let p: TColor[] = [
@@ -355,19 +390,42 @@ const App: React.FC = () => {
   const [palettes, setPallets] = React.useState(p)
 
   return (
-    <div className="App">
+    <div className="App" style={{height: '720px'}}>
       {/*<header className="App-header">*/}
       {/*</header>*/}
-      <div>
-        <EntireMap dots={dots} width={width} height={height}/>
+      <div style={{width: '30%'}}>
+        <EntireMap dots={cells[cellIndex]} width={width} height={height}/>
+        <div className={'AnimStrip'}>
+          <ul>
+            {cells.map<any>((v, ix) => {
+              return (
+                <li><Cell dots={v} setDots={setDots} index={ix} setIndex={setCellIndex}/></li>
+              )
+            })}
+            <li style={{verticalAlign: 'center', alignItems: 'center'}}>
+              <div
+                style={{width: '24px', height: '24px', borderRadius: '4px', borderStyle: 'solid', borderWidth: '1px'}}
+                onClick={() => {
+                  cells.splice(cellIndex + 1, 0, Uint8ClampedArray.from(dots))
+                  setCells(cells)
+                  setCellIndex(cellIndex + 1)
+                  setDots(cells[cellIndex + 1])
+                }}
+              >+
+              </div>
+            </li>
+          </ul>
+        </div>
       </div>
       <div>
         <div style={{display: 'flex', flexFlow: 'row'}}>
         <ColorPicker palette={palettes} setPallet={setPallets} penColorIndex={penColorIndex}/>
         <ColorPalette palettes={palettes} penColorIndex={penColorIndex} setPenColorIndex={setPenColorIndex} setPalette={setPallets}/>
         </div>
-        <Matrix width={width} height={height} drawing={drawing} setDrawing={setDrawing} dots={dots} setDots={setDots}
-                palette={palettes} setPalette={setPallets} penColorIndex={penColorIndex}
+        <Matrix width={width} height={height} drawing={drawing} setDrawing={setDrawing}
+                cells={cells} cellIndex={cellIndex} setDots={setDots}
+                dots={dots}
+                palette={palettes} setPalette={setPallets} penColorIndex={penColorIndex} setPenColorIndex={setPenColorIndex}
         />
       </div>
     </div>

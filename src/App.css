@@ -128,3 +128,26 @@
     width: 26px;
     height: 26px;
 }
+
+.AnimStrip {
+    width: 40%;
+    height: 600px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.AnimStrip ul {
+    padding-inline-start: unset;
+    margin-block-start: unset;
+    margin-block-end: unset;
+}
+
+.AnimStrip li div {
+    list-style: none;
+    vertical-align: center;
+    border: dimgray solid 1px;
+    margin: 1px;
+    width: 64px;
+    height: 64px;
+}
