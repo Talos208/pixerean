@@ -1,5 +1,14 @@
 import React, {ChangeEvent, useRef} from 'react';
 import './App.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  IconLookup,
+  IconDefinition,
+  findIconDefinition,
+  library
+} from '@fortawesome/fontawesome-svg-core'
+import {faFile, faFileImport, faPlus, faSave} from '@fortawesome/free-solid-svg-icons'
+library.add(faPlus, faSave, faFile, faFileImport)
 
 const getColorCode = (dots: ArrayLike<number>) => '#' +
   dots[0].toString(16).padStart(2, '0') +
@@ -289,13 +298,6 @@ const ColorPicker = ({palette, setPallet, penColorIndex}: IColorPicker) => {
   let color = palette[penColorIndex]
   return (
     <div className={'ColorPicker'}>
-      <div className={'backdrop'}>
-        <div className={'ColorTip'} style={{
-          backgroundColor: getColorCode(toRgb(color)),
-          opacity: color.alpha / 255,
-        }}>
-        </div>
-      </div>
       <ul className={'ColorValues'}>
         <li>
           <label id={'colorRed'}><span>R</span>
@@ -368,7 +370,7 @@ const ColorPalette = ({palettes, setPalette, penColorIndex, setPenColorIndex}: I
           }
           setPalette(np)
         }}
-        ><div>+</div></li>
+        ><div><FontAwesomeIcon icon={'plus'}/></div></li>
       </ul>
     </div>
   )
@@ -390,12 +392,26 @@ const App: React.FC = () => {
   const [palettes, setPallets] = React.useState(p)
 
   return (
-    <div className="App" style={{height: '720px'}}>
+    <div className="App" style={{height: '720px', display: 'flex', flexFlow: 'column'}}>
       {/*<header className="App-header">*/}
       {/*</header>*/}
-      <div style={{width: '30%'}}>
+      <nav className={'CommandMenu'}>
+        <ul >
+          <li>
+            <button ><span><FontAwesomeIcon icon={['fas', 'file']} size={'xs'}/>New</span></button>
+          </li>
+          <li>
+            <button ><span><FontAwesomeIcon icon={['fas', 'file-import']} size={'xs'}/>Load</span></button>
+          </li>
+          <li>
+            <button ><span><FontAwesomeIcon icon={['fas','save']} size={'xs'}/>Save</span></button>
+          </li>
+        </ul>
+      </nav>
+      <div className={'Contents'}>
+      <section className={'AnimPane'}>
         <EntireMap dots={cells[cellIndex]} width={width} height={height}/>
-        <div className={'AnimStrip'}>
+        <section className={'AnimStrip'}>
           <ul>
             {cells.map<any>((v, ix) => {
               return (
@@ -411,22 +427,23 @@ const App: React.FC = () => {
                   setCellIndex(cellIndex + 1)
                   setDots(cells[cellIndex + 1])
                 }}
-              >+
+              ><FontAwesomeIcon icon={'plus'}/>
               </div>
             </li>
           </ul>
-        </div>
-      </div>
-      <div>
-        <div style={{display: 'flex', flexFlow: 'row'}}>
-        <ColorPicker palette={palettes} setPallet={setPallets} penColorIndex={penColorIndex}/>
-        <ColorPalette palettes={palettes} penColorIndex={penColorIndex} setPenColorIndex={setPenColorIndex} setPalette={setPallets}/>
+        </section>
+      </section>
+      <section className={'EditPane'} >
+        <div className={'ColorEdit'}>
+          <ColorPicker palette={palettes} setPallet={setPallets} penColorIndex={penColorIndex}/>
+          <ColorPalette palettes={palettes} penColorIndex={penColorIndex} setPenColorIndex={setPenColorIndex} setPalette={setPallets}/>
         </div>
         <Matrix width={width} height={height} drawing={drawing} setDrawing={setDrawing}
                 cells={cells} cellIndex={cellIndex} setDots={setDots}
                 dots={dots}
                 palette={palettes} setPalette={setPallets} penColorIndex={penColorIndex} setPenColorIndex={setPenColorIndex}
         />
+      </section>
       </div>
     </div>
   );
